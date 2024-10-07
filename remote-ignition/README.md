@@ -1,3 +1,3 @@
-# Remote Ingition
+# Remote Ignition
 
-Code for Remote Ingition circuitry.
+Code for Remote Ignition circuitry.
