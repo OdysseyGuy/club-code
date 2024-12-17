@@ -14,12 +14,10 @@
 #define BMP_REG_DATA_1    0x05
 #define BMP_REG_DATA_0    0x04
 
-void BMPSensor::init(uint8_t chipSelect, BMPOversampling pos, BMPOversampling tos)
+BMPSensor::BMPSensor(uint8_t chipSelect)
 {
   _chipSelect = chipSelect;
-  if (_spi == nullptr) {
-    LOG_ERROR("BMP SPI Interface is not initialized properly.");
-  }
+  _spi = nullptr;
 }
 
 uint8_t BMPSensor::readPressure()
@@ -36,6 +34,11 @@ uint8_t BMPSensor::pressureToAltitude()
 {
 }
 
+bool BMPSensor::isDataReady()
+{
+  return false;
+}
+
 BMPOversampling BMPSensor::getPressureOversampling()
 {
   return BMPOversampling();
@@ -46,9 +49,9 @@ BMPOversampling BMPSensor::getTemperatureOversampling()
   return BMPOversampling();
 }
 
-BMPOutputDataRate BMPSensor::getOutputDataRate()
+BMPODR BMPSensor::getODR()
 {
-  return BMPOutputDataRate();
+  return BMPODR();
 }
 
 BMPPowerMode BMPSensor::getPowerMode()
@@ -56,10 +59,10 @@ BMPPowerMode BMPSensor::getPowerMode()
   return BMPPowerMode();
 }
 
-void BMPSensor::setPressureOversampling(BMPOversampling oversampling)
+BMPError BMPSensor::setPressureOversampling(BMPOversampling oversampling)
 {
   if (_spi == nullptr) {
-    LOG_ERROR("Missing SPI Handle in BMPSensor::setPressureOversampling");
+    return BMP_ERROR_INTERFACE;
   }
   uint8_t prev = readRegister(BMP_REG_OSR);
   prev &= ~(7 << 0);
@@ -67,13 +70,16 @@ void BMPSensor::setPressureOversampling(BMPOversampling oversampling)
   uint8_t res = writeRegister(BMP_REG_OSR, prev);
   if (res != 0) {
     LOG_ERROR("Failed to write Pressure oversampling!");
+    return BMP_ERROR_WRITE;
+  } else {
+    return BMP_SUCCESS;
   }
 }
 
-void BMPSensor::setTemperatureOversampling(BMPOversampling oversampling)
+BMPError BMPSensor::setTemperatureOversampling(BMPOversampling oversampling)
 {
   if (_spi == nullptr) {
-    LOG_ERROR("Missing SPI Handle in BMPSensor::setTemperatureOversampling");
+    return BMP_ERROR_INTERFACE;
   }
   uint8_t prev = readRegister(BMP_REG_OSR);
   prev &= ~(7 << 3);
@@ -81,13 +87,16 @@ void BMPSensor::setTemperatureOversampling(BMPOversampling oversampling)
   uint8_t res = writeRegister(BMP_REG_OSR, prev);
   if (res != 0) {
     LOG_ERROR("Failed to write Pressure oversampling!");
+    return BMP_ERROR_WRITE;
+  } else {
+    return BMP_SUCCESS;
   }
 }
 
-void BMPSensor::setOutputDataRate(BMPOutputDataRate odr)
+BMPError BMPSensor::setODR(BMPODR odr)
 {
   if (_spi == nullptr) {
-    LOG_ERROR("Missing SPI Handle in BMPSensor::setOutputDataRate");
+    return BMP_ERROR_INTERFACE;
   }
   uint8_t prev = readRegister(BMP_REG_ODR);
   prev &= ~(31 << 0);
@@ -95,13 +104,16 @@ void BMPSensor::setOutputDataRate(BMPOutputDataRate odr)
   uint8_t res = writeRegister(BMP_REG_ODR, prev);
   if (res != 0) {
     LOG_ERROR("Failed to write Pressure oversampling!");
+    return BMP_ERROR_WRITE;
+  } else {
+    return BMP_SUCCESS;
   }
 }
 
-void BMPSensor::setPowerMode(BMPPowerMode mode)
+BMPError BMPSensor::setPowerMode(BMPPowerMode mode)
 {
   if (_spi == nullptr) {
-    LOG_ERROR("Missing SPI Handle in BMPSensor::setPowerMode");
+    return BMP_ERROR_INTERFACE;
   }
   uint8_t prev = readRegister(BMP_REG_PWR_CTRL);
   prev &= ~(7 << 0);
@@ -109,13 +121,17 @@ void BMPSensor::setPowerMode(BMPPowerMode mode)
   uint8_t res = writeRegister(BMP_REG_PWR_CTRL, prev);
   if (res != 0) {
     LOG_ERROR("Failed to write Pressure oversampling!");
+    return BMP_ERROR_WRITE;
+  } else {
+    return BMP_SUCCESS;
   }
 }
 
 uint8_t BMPSensor::writeRegister(uint8_t reg, uint8_t val)
 {
   uint8_t result = 0;
-  uint8_t write_addr = reg & 0x7f; // MSB 0: Write 1: Write
+  // MSB 0: Write 1: Write
+  uint8_t write_addr = reg & 0x7f;
   _spi->beginTransaction(SPISettings(8000000, MSBFIRST, SPI_MODE0));
   digitalWrite(_chipSelect, LOW);
   _spi->transfer(write_addr);

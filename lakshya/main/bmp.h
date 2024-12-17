@@ -18,7 +18,7 @@ enum BMPOversampling
   BMP_OVERSAMPLING_x32  = 0x05,
 };
 
-enum BMPOutputDataRate
+enum BMPODR
 {
   BMP_ODR_200_HZ    = 0x00,
   BMP_ODR_100_HZ    = 0x01,
@@ -40,25 +40,34 @@ enum BMPOutputDataRate
   BMP_ODR_0P0015_HZ = 0x11, 
 };
 
+enum BMPError
+{
+  BMP_SUCCESS         = 0x00,
+  BMP_ERROR_INTERFACE = 0x01,
+  BMP_ERROR_READ      = 0x02,
+  BMP_ERROR_WRITE     = 0x03,
+};
+
 class SPIClass;
 class BMPSensor
 {
 public:
-  void init(uint8_t chipSelect, BMPOversampling pos, BMPOversampling tos);
+  BMPSensor(uint8_t chipSelect);
 
   uint8_t readPressure();
   uint8_t readTemperature();
   uint8_t pressureToAltitude();
 
+  bool isDataReady();
   BMPOversampling getPressureOversampling();
   BMPOversampling getTemperatureOversampling();
-  BMPOutputDataRate getOutputDataRate();
+  BMPODR getODR();
   BMPPowerMode getPowerMode();
 
-  void setPressureOversampling(BMPOversampling oversampling);
-  void setTemperatureOversampling(BMPOversampling oversampling);
-  void setOutputDataRate(BMPOutputDataRate odr);
-  void setPowerMode(BMPPowerMode mode);
+  BMPError setPressureOversampling(BMPOversampling oversampling);
+  BMPError setTemperatureOversampling(BMPOversampling oversampling);
+  BMPError setODR(BMPODR odr);
+  BMPError setPowerMode(BMPPowerMode mode);
 
 private:
   uint8_t writeRegister(uint8_t reg, uint8_t val);
