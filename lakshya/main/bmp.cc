@@ -1,28 +1,28 @@
 #include "SPI.h"
 #include "bmp.h"
 
-#define BMP390_REG_CMD          0x7E
-#define BMP390_REG_NVM_PAR_T1_L 0x31
-#define BMP390_REG_NVM_PAR_T1_H 0x32
-#define BMP390_REG_NVM_PAR_T2_L 0x33
-#define BMP390_REG_NVM_PAR_T2_H 0x34
-#define BMP390_REG_NVM_PAR_T3   0x35
-#define BMP390_REG_NVM_PAR_P1_L 0x36
-#define BMP390_REG_NVM_PAR_P1_H 0x37
-#define BMP390_REG_NVM_PAR_P2_L 0x38
-#define BMP390_REG_NVM_PAR_P2_H 0x39
-#define BMP390_REG_NVM_PAR_P3   0x3A
-#define BMP390_REG_NVM_PAR_P4   0x3B
-#define BMP390_REG_NVM_PAR_P5_L 0x3C
-#define BMP390_REG_NVM_PAR_P5_H 0x3D
-#define BMP390_REG_NVM_PAR_P6_L 0x3E
-#define BMP390_REG_NVM_PAR_P6_H 0x3F
-#define BMP390_REG_NVM_PAR_P7   0x40
-#define BMP390_REG_NVM_PAR_P8   0x41
-#define BMP390_REG_NVM_PAR_P9_L 0x42
-#define BMP390_REG_NVM_PAR_P9_H 0x43
-#define BMP390_REG_NVM_PAR_P10  0x44
-#define BMP390_REG_NVM_PAR_P11  0x45
+#define BMP_REG_CMD             0x7E
+#define BMP_REG_NVM_PAR_T1_L    0x31
+#define BMP_REG_NVM_PAR_T1_H    0x32
+#define BMP_REG_NVM_PAR_T2_L    0x33
+#define BMP_REG_NVM_PAR_T2_H    0x34
+#define BMP_REG_NVM_PAR_T3      0x35
+#define BMP_REG_NVM_PAR_P1_L    0x36
+#define BMP_REG_NVM_PAR_P1_H    0x37
+#define BMP_REG_NVM_PAR_P2_L    0x38
+#define BMP_REG_NVM_PAR_P2_H    0x39
+#define BMP_REG_NVM_PAR_P3      0x3A
+#define BMP_REG_NVM_PAR_P4      0x3B
+#define BMP_REG_NVM_PAR_P5_L    0x3C
+#define BMP_REG_NVM_PAR_P5_H    0x3D
+#define BMP_REG_NVM_PAR_P6_L    0x3E
+#define BMP_REG_NVM_PAR_P6_H    0x3F
+#define BMP_REG_NVM_PAR_P7      0x40
+#define BMP_REG_NVM_PAR_P8      0x41
+#define BMP_REG_NVM_PAR_P9_L    0x42
+#define BMP_REG_NVM_PAR_P9_H    0x43
+#define BMP_REG_NVM_PAR_P10     0x44
+#define BMP_REG_NVM_PAR_P11     0x45
 #define BMP_REG_CONFIG          0x1F
 #define BMP_REG_ODR             0x1D
 #define BMP_REG_OSR             0x1C
@@ -203,7 +203,7 @@ bmp_error_t bmp_set_power_mode(bmp_device_t *bmp, bmp_power_mode_t mode) {
 
 static void bmp_get_calibration_data(bmp_device_t *bmp) {
   uint8_t reg_data[21] = {0};
-  bmp_read_register(bmp, BMP390_REG_NVM_PAR_T1_L, 21, reg_data);
+  bmp_read_register(bmp, BMP_REG_NVM_PAR_T1_L, 21, reg_data);
 
 #ifdef FLOAT_COMPENSATION
   bmp_reg_calib_data_t *reg_calib_data = &bmp->calib_data.reg_calib_data;
@@ -284,8 +284,8 @@ bmp_compensate_temperature(bmp_device_t *bmp, uint32_t data) {
   double partial_data1;
   double partial_data2;
 
-  partial_data1 = (double)(uncomp_data - bmp->calib_data.quantized_calib_data.par_t1);
-  partial_data2 = (double)(partial_data1 * bmp->calib_data.quantized_calib_data.par_t2);
+  partial_data1 = (double)(uncomp_data - calib_data->par_t1);
+  partial_data2 = (double)(partial_data1 * calib_data->par_t2);
   calib_data->t_lin = partial_data2 + (partial_data1 * partial_data1) * calib_data->par_t3;
 
   if (calib_data->t_lin < BMP3_MIN_TEMP_DOUBLE) {
@@ -316,6 +316,13 @@ bmp_compensate_temperature(bmp_device_t *bmp, uint32_t data) {
   calib_data->t_lin = partial_data6;
   comp_temp = (int64_t)((partial_data6 * 25)  / 16384);
 
+  if (calib_data->t_lin < BMP3_MIN_TEMP_INT) {
+    calib_data->t_lin = BMP3_MIN_TEMP_INT;
+  }
+  if (calib_data->t_lin > BMP3_MAX_TEMP_INT) {
+    calib_data->t_lin = BMP3_MAX_TEMP_INT;
+  }
+  
   return comp_temp;
 #endif
 }
